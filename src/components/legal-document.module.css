@@ -1,0 +1,164 @@
+.page {
+  min-height: 100vh;
+  padding: 28px 5% 60px;
+  background: #f7f8f5;
+  color: #233128;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: min(100%, 980px);
+  margin: 0 auto 34px;
+}
+
+.languageSwitcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid #dfe6dc;
+  border-radius: 999px;
+  background: #f3f6f0;
+  white-space: nowrap;
+}
+
+.languageSwitcher button {
+  min-width: 35px;
+  height: 29px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: #647168;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .04em;
+  line-height: 1;
+  cursor: pointer;
+  transition: color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.languageSwitcher button:hover {
+  border-color: #d7e1d1;
+  background: #fff;
+  color: #355640;
+}
+
+.languageSwitcher button:focus-visible {
+  outline: 2px solid #789b69;
+  outline-offset: 2px;
+}
+
+.languageSwitcher .languageActive {
+  border-color: #d4dfce;
+  background: #fff;
+  color: #315b40;
+  box-shadow: 0 1px 3px #183c301c;
+}
+
+.backLink,
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #42633d;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.brand {
+  color: #24352b;
+  font-size: 17px;
+}
+
+.brandMark {
+  display: grid;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  border-radius: 10px 10px 10px 3px;
+  background: #dce8d1;
+  color: #476d41;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.document {
+  width: min(100%, 820px);
+  margin: 0 auto;
+  padding: clamp(24px, 5vw, 52px);
+  border: 1px solid #e8ece6;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 40px #17231d0a;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #789267;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.document h1 {
+  margin: 0;
+  color: #25372d;
+  font-size: clamp(27px, 5vw, 38px);
+  line-height: 1.2;
+}
+
+.intro,
+.document section p {
+  color: #67746b;
+  font-size: 14px;
+  line-height: 1.85;
+}
+
+.intro {
+  margin: 18px 0 30px;
+}
+
+.document section {
+  padding: 19px 0;
+  border-top: 1px solid #edf0ec;
+}
+
+.document section h2 {
+  margin: 0 0 8px;
+  color: #344a39;
+  font-size: 17px;
+}
+
+.document section p {
+  margin: 0;
+}
+
+.supportLink {
+  display: inline-flex;
+  margin-top: 20px;
+  padding: 11px 16px;
+  border-radius: 8px;
+  background: #476d41;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: 20px 4% 40px;
+  }
+
+  .header {
+    align-items: flex-start;
+  }
+
+  .document {
+    border-radius: 13px;
+  }
+}

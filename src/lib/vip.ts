@@ -1,0 +1,3 @@
+export const VIP_PRICE_TETRI = 100;
+export const VIP_DURATION_HOURS = 24;
+export const VIP_RECIPIENT_IBAN = "GE96BG0000000611192493";
