@@ -4,14 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate --schema prisma/schema.postgresql.prisma && next build",
     "start": "next start",
     "lint": "eslint .",
     "test": "tsx --test src/lib/validation.test.ts src/lib/message-notifications.test.ts",
-    "db:generate": "prisma generate",
+    "db:generate": "prisma generate --schema prisma/schema.prisma",
+    "db:generate:prod": "prisma generate --schema prisma/schema.postgresql.prisma",
     "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev",
+    "db:migrate": "prisma migrate dev --schema prisma/schema.postgresql.prisma",
+    "db:deploy": "prisma migrate deploy --schema prisma/schema.postgresql.prisma",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:prod": "prisma generate --schema prisma/schema.postgresql.prisma && tsx prisma/seed.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

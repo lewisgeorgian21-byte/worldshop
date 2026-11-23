@@ -1,5 +1,5 @@
 import { ZodError, z } from "zod";
-import { isUploadedImagePath, MAX_LISTING_IMAGES } from "@/lib/image-constraints";
+import { isManagedUploadedImage, MAX_LISTING_IMAGES } from "@/lib/image-constraints";
 
 export const registerSchema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -8,7 +8,7 @@ export const registerSchema = z.object({
 });
 
 const imageUrlSchema = z.string().max(2048).refine((value) => {
-  if (isUploadedImagePath(value)) return true;
+  if (isManagedUploadedImage(value)) return true;
   try {
     const url = new URL(value);
     return url.protocol === "https:" && (url.hostname === "images.unsplash.com" || url.hostname === "res.cloudinary.com");

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
+import { getAppUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 
@@ -7,7 +8,7 @@ export async function POST() {
   const auth = await requireUser();
   if (auth.response) return auth.response;
   const country = process.env.STRIPE_CONNECT_COUNTRY;
-  const origin = process.env.APP_URL;
+  const origin = getAppUrl();
   if (!country || !/^[A-Z]{2}$/.test(country) || !origin) {
     return NextResponse.json({ error: "Seller payments are not configured for this marketplace" }, { status: 503 });
   }

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Pencil, Trash2, X, Star, Upload, Megaphone } from "lucide-react";
 import { formatPrice } from "@/lib/format-price";
+import { uploadListingImages } from "@/lib/client-image-upload";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import styles from "./admin-dashboard.module.css";
@@ -417,11 +418,9 @@ export function AdminDashboard({ currentUserId, canManageSuperAdmins }: Props) {
     setBusyId("promotion");
     try {
       if (promotionImageFile) {
-        const upload = new FormData();
-        upload.append("images", promotionImageFile);
-        const uploaded = await request<{ imageUrls: string[] }>("/api/uploads", { method: "POST", body: upload });
-        if (!uploaded.imageUrls[0]) throw new Error(t("admin.promotionImageFailed"));
-        imageUrl = uploaded.imageUrls[0];
+        const uploaded = await uploadListingImages([promotionImageFile]);
+        if (!uploaded[0]) throw new Error(t("admin.promotionImageFailed"));
+        imageUrl = uploaded[0];
       }
       const promotionInput = {
         kind: form.get("kind"),

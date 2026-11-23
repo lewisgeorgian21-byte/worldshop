@@ -113,7 +113,8 @@ async function main() {
   }
   const demoListingIds = sampleListings.map(({ id }) => id);
   const nonDemoListingCount = await prisma.listing.count({ where: { id: { notIn: demoListingIds } } });
-  if (nonDemoListingCount === 0) {
+  const seedDemoListings = process.env.SEED_DEMO_LISTINGS?.toLowerCase() !== "false";
+  if (seedDemoListings && nonDemoListingCount === 0) {
     const sampleSellerEmail = "sample-seller@example.test";
     let sampleSeller = await prisma.user.findUnique({ where: { email: sampleSellerEmail } });
     if (!sampleSeller) {

@@ -7,6 +7,7 @@ import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } fr
 import { CarFront, Heart, Search, ArrowRight, ArrowLeft, ChevronLeft, ChevronRight, ChevronDown, BadgeCheck, ShieldCheck, Truck, Tag, Sparkles, Plus, UserRound, LogOut, X, Menu, ShoppingBag, Check, LoaderCircle, House, Laptop, Shirt, Smartphone, Upload, Pencil, Trash2, MessageCircle, Star, Megaphone, ExternalLink, Snowflake, Copy } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_BYTES, MAX_LISTING_IMAGES } from "@/lib/image-constraints";
+import { uploadListingImages } from "@/lib/client-image-upload";
 import { formatPrice } from "@/lib/format-price";
 import { getWhatsAppSupportUrl, useI18n } from "@/lib/i18n";
 import { compareListings } from "@/lib/listing-sort";
@@ -1083,15 +1084,12 @@ export function Marketplace({ initialListings, initialPromotions, categoryOption
 
   async function uploadSelectedImages() {
     if (selectedImagesRef.current.length === 0) return [];
-    const uploadForm = new FormData();
-    selectedImagesRef.current.forEach(({ file }) => uploadForm.append("images", file));
-    const response = await fetch("/api/uploads", { method: "POST", body: uploadForm });
-    const data = await response.json();
-    if (!response.ok) throw new Error(translateServerMessage(data.error) || t("notice.imageUploadFailed"));
-    if (!Array.isArray(data.imageUrls) || data.imageUrls.some((url: unknown) => typeof url !== "string")) {
-      throw new Error(t("notice.badImageResponse"));
+    try {
+      return await uploadListingImages(selectedImagesRef.current.map(({ file }) => file));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("notice.imageUploadFailed");
+      throw new Error(translateServerMessage(message) || message);
     }
-    return data.imageUrls as string[];
   }
 
   async function openProfile() {
@@ -1439,23 +1437,14 @@ export function Marketplace({ initialListings, initialPromotions, categoryOption
     try {
       let imageUrls = fallbackImageUrls;
       if (selectedCount) {
-        const uploadForm = new FormData();
-        selectedImagesRef.current.forEach(({ file }) => uploadForm.append("images", file));
-        const uploadResponse = await fetch("/api/uploads", { method: "POST", body: uploadForm });
-        const uploadData = await uploadResponse.json().catch((error: unknown) => {
-          console.error("Listing image upload API returned invalid JSON", { status: uploadResponse.status, error });
-          return null;
-        });
-        if (!uploadResponse.ok) {
-          const errorMessage = typeof uploadData?.error === "string" ? uploadData.error : undefined;
-          console.warn("Listing image upload rejected", { status: uploadResponse.status, error: errorMessage });
+        try {
+          imageUrls = [...await uploadListingImages(selectedImagesRef.current.map(({ file }) => file)), ...fallbackImageUrls];
+        } catch (error) {
+          console.error("Listing image upload failed", error);
+          const errorMessage = error instanceof Error ? error.message : undefined;
           setNotice(translateServerMessage(errorMessage) || errorMessage || t("notice.imageUploadFailed"));
           return;
         }
-        if (!Array.isArray(uploadData.imageUrls) || uploadData.imageUrls.some((url: unknown) => typeof url !== "string")) {
-          throw new Error(t("notice.badImageResponse"));
-        }
-        imageUrls = [...uploadData.imageUrls, ...fallbackImageUrls];
       }
 
       const response = await fetch("/api/listings", {

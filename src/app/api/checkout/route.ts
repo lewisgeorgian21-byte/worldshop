@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
+import { getAppUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 import { z } from "zod";
@@ -62,8 +63,8 @@ export async function POST(request: Request) {
       }
     });
     orderId = order.id;
-    const origin = process.env.APP_URL;
-    if (!origin) throw new Error("APP_URL is required for checkout redirects");
+    const origin = getAppUrl();
+    if (!origin) throw new Error("APP_URL or VERCEL_URL is required for checkout redirects");
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [{

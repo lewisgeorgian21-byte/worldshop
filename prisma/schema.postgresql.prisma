@@ -1,0 +1,247 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  USER
+  SUPPORT
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum ListingStatus {
+  ACTIVE
+  RESERVED
+  PAUSED
+  SOLD
+  REMOVED
+}
+
+enum ProductCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+enum VipPurchaseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  USER_CONFIRMED
+}
+
+enum PromotionKind {
+  INTERNAL
+  PARTNER
+}
+
+enum PromotionPlacement {
+  CAROUSEL
+  FEED
+  TICKER
+}
+
+model User {
+  id                   String        @id @default(cuid())
+  name                 String
+  email                String        @unique
+  passwordHash         String
+  role                 Role          @default(USER)
+  isBanned             Boolean       @default(false)
+  emailVerifiedAt      DateTime?
+  stripeAccountId      String?       @unique
+  stripeChargesEnabled Boolean       @default(false)
+  stripePayoutsEnabled Boolean       @default(false)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  sessions             Session[]
+  listings             Listing[]
+  favorites            Favorite[]
+  sentMessages         Message[]     @relation("SentMessages")
+  receivedMessages     Message[]     @relation("ReceivedMessages")
+  purchases            Order[]       @relation("BuyerOrders")
+  sales                Order[]       @relation("SellerOrders")
+  vipPurchases         VipPurchase[]
+  reviewedVipPurchases  VipPurchase[] @relation("VipPurchaseReviews")
+
+  @@index([role, createdAt])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model Category {
+  id        String     @id @default(cuid())
+  nameKa    String
+  nameEn    String
+  slug      String     @unique
+  parentId  String?
+  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children  Category[] @relation("CategoryTree")
+  listings  Listing[]
+  createdAt DateTime   @default(now())
+
+  @@index([parentId])
+}
+
+model Listing {
+  id            String           @id @default(cuid())
+  title         String
+  description   String
+  price         Int
+  currency      String           @default("GEL")
+  condition     ProductCondition
+  location      String
+  imageUrls     Json
+  status        ListingStatus    @default(ACTIVE)
+  isVip         Boolean          @default(false)
+  vipAssignedAt DateTime?
+  vipExpiresAt  DateTime?
+  views         Int              @default(0)
+  sellerId      String
+  categoryId    String
+  createdAt     DateTime         @default(now())
+  expiresAt     DateTime?
+  updatedAt     DateTime         @updatedAt
+  seller        User             @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  category      Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  favorites     Favorite[]
+  messages      Message[]
+  orders        Order[]
+
+  @@index([status, createdAt])
+  @@index([categoryId, status, createdAt])
+  @@index([sellerId, status])
+  @@index([status, isVip, vipAssignedAt, createdAt])
+  @@index([isVip, vipExpiresAt])
+  @@index([price])
+}
+
+model VipPurchase {
+  id               String            @id @default(cuid())
+  userId           String
+  listingId        String
+  amountTetri      Int
+  currency         String            @default("GEL")
+  durationHours    Int               @default(24)
+  recipientIban    String
+  paymentReference String
+  transferReference String           @default("")
+  status           VipPurchaseStatus @default(PENDING)
+  createdAt        DateTime          @default(now())
+  confirmedAt      DateTime?
+  reviewedAt       DateTime?
+  reviewedById     String?
+  user             User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  reviewer         User?             @relation("VipPurchaseReviews", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([listingId, createdAt])
+  @@index([status, createdAt])
+}
+
+model Promotion {
+  id            String             @id @default(cuid())
+  kind          PromotionKind      @default(INTERNAL)
+  placement     PromotionPlacement @default(CAROUSEL)
+  titleKa       String
+  titleEn       String
+  titleRu       String
+  descriptionKa String             @default("")
+  descriptionEn String             @default("")
+  descriptionRu String             @default("")
+  ctaKa         String             @default("")
+  ctaEn         String             @default("")
+  ctaRu         String             @default("")
+  imageUrl      String?
+  targetUrl     String?
+  isActive      Boolean            @default(true)
+  sortOrder     Int                @default(0)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([placement, isActive, sortOrder])
+}
+
+model Favorite {
+  userId    String
+  listingId String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@id([userId, listingId])
+  @@index([listingId])
+}
+
+model Message {
+  id                  String   @id @default(cuid())
+  senderId            String
+  recipientId         String
+  listingId           String
+  body                String
+  isRead              Boolean  @default(true)
+  hiddenFromSender    Boolean  @default(false)
+  hiddenFromRecipient Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  sender              User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient           User     @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
+  listing             Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, createdAt])
+  @@index([senderId, createdAt])
+  @@index([listingId, createdAt])
+}
+
+model Order {
+  id                    String      @id @default(cuid())
+  buyerId               String
+  sellerId              String
+  listingId             String
+  amount                Int
+  commissionAmount      Int
+  buyerName             String?
+  buyerPhone            String?
+  deliveryMethod        String?
+  deliveryAddress       String?
+  paymentMethod         String      @default("CARD")
+  note                  String?
+  currency              String      @default("gel")
+  status                OrderStatus @default(PENDING_PAYMENT)
+  sellerRead            Boolean     @default(true)
+  hiddenFromBuyer       Boolean     @default(false)
+  hiddenFromSeller      Boolean     @default(false)
+  stripeCheckoutSession String?     @unique
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  buyer                 User        @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Restrict)
+  seller                User        @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Restrict)
+  listing               Listing     @relation(fields: [listingId], references: [id], onDelete: Restrict)
+
+  @@index([buyerId, createdAt])
+  @@index([sellerId, status, createdAt])
+  @@index([status, createdAt])
+}

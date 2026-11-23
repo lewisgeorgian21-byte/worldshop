@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { del } from "@vercel/blob";
+import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_BYTES, MAX_LISTING_IMAGES, type AllowedImageType } from "@/lib/image-constraints";
@@ -13,6 +15,8 @@ const extensionByType: Record<AllowedImageType, string> = {
   "image/webp": "webp"
 };
 const MAX_REQUEST_SIZE_BYTES = MAX_LISTING_IMAGES * MAX_IMAGE_SIZE_BYTES + 1024 * 1024;
+const UNAUTHORIZED_UPLOAD = "UPLOAD_AUTH_REQUIRED";
+const blobPathPattern = /^listing-images\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp)$/i;
 
 function detectImageType(buffer: Buffer): AllowedImageType | null {
   if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return "image/jpeg";
@@ -25,6 +29,55 @@ function detectImageType(buffer: Buffer): AllowedImageType | null {
 }
 
 export async function POST(request: Request) {
+  if (request.headers.get("content-type")?.includes("application/json")) {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return NextResponse.json({ error: "სერვერზე სურათების საცავი არ არის კონფიგურირებული." }, { status: 503 });
+    }
+
+    try {
+      const body = await request.json() as HandleUploadBody;
+      const response = await handleUpload({
+        body,
+        request,
+        onBeforeGenerateToken: async (pathname) => {
+          const auth = await requireUser();
+          if (auth.response) throw new Error(UNAUTHORIZED_UPLOAD);
+          if (!blobPathPattern.test(pathname)) throw new Error("სურათის ფაილის სახელი არასწორია.");
+          return {
+            allowedContentTypes: [...ALLOWED_IMAGE_TYPES],
+            maximumSizeInBytes: MAX_IMAGE_SIZE_BYTES,
+            addRandomSuffix: true,
+            tokenPayload: auth.user!.id
+          };
+        },
+        onUploadCompleted: async ({ blob }) => {
+          const response = await fetch(blob.url);
+          if (!response.ok) throw new Error("ატვირთული სურათის შემოწმება ვერ მოხერხდა.");
+          const buffer = Buffer.from(await response.arrayBuffer());
+          if (buffer.length > MAX_IMAGE_SIZE_BYTES || detectImageType(buffer) !== blob.contentType) {
+            try {
+              await del(blob.url);
+            } catch (cleanupError) {
+              console.error("Invalid uploaded image cleanup failed", cleanupError);
+            }
+            throw new Error("ატვირთული ფაილი მხარდაჭერილი სურათი არ არის.");
+          }
+        }
+      });
+      return NextResponse.json(response);
+    } catch (error) {
+      if (error instanceof Error && error.message === UNAUTHORIZED_UPLOAD) {
+        return NextResponse.json({ error: "სურათების ასატვირთად სისტემაში შესვლა აუცილებელია." }, { status: 401 });
+      }
+      console.error("Vercel Blob image upload failed", error);
+      return NextResponse.json({ error: "სურათების ატვირთვა ვერ მოხერხდა. სცადე თავიდან." }, { status: 400 });
+    }
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "სერვერზე სურათები უნდა აიტვირთოს მუდმივ საცავში." }, { status: 415 });
+  }
+
   const auth = await requireUser();
   if (auth.response) {
     return NextResponse.json({ error: "სურათების ასატვირთად სისტემაში შესვლა აუცილებელია." }, { status: 401 });
