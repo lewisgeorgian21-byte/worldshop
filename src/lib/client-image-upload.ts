@@ -36,8 +36,9 @@ export async function uploadListingImages(files: File[]) {
   if (!response.ok) {
     throw new Error(typeof data?.error === "string" ? data.error : "სურათების ატვირთვა ვერ მოხერხდა.");
   }
-  if (!Array.isArray(data?.imageUrls) || data.imageUrls.some((url) => typeof url !== "string")) {
+  const imageUrls = data?.imageUrls;
+  if (!Array.isArray(imageUrls) || !imageUrls.every((url): url is string => typeof url === "string")) {
     throw new Error("სურათების ატვირთვის პასუხი არასწორია.");
   }
-  return data.imageUrls;
+  return imageUrls;
 }

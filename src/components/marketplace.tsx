@@ -1088,7 +1088,7 @@ export function Marketplace({ initialListings, initialPromotions, categoryOption
       return await uploadListingImages(selectedImagesRef.current.map(({ file }) => file));
     } catch (error) {
       const message = error instanceof Error ? error.message : t("notice.imageUploadFailed");
-      throw new Error(translateServerMessage(message) || message);
+      throw new Error(translateServerMessage(message) || t("notice.imageUploadFailed"));
     }
   }
 
@@ -1442,7 +1442,7 @@ export function Marketplace({ initialListings, initialPromotions, categoryOption
         } catch (error) {
           console.error("Listing image upload failed", error);
           const errorMessage = error instanceof Error ? error.message : undefined;
-          setNotice(translateServerMessage(errorMessage) || errorMessage || t("notice.imageUploadFailed"));
+          setNotice(translateServerMessage(errorMessage) || t("notice.imageUploadFailed"));
           return;
         }
       }

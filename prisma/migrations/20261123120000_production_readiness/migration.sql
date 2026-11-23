@@ -12,6 +12,10 @@ ADD COLUMN "vipAssignedAt" TIMESTAMP(3),
 ADD COLUMN "vipExpiresAt" TIMESTAMP(3),
 ADD COLUMN "expiresAt" TIMESTAMP(3);
 
+UPDATE "Listing"
+SET "expiresAt" = "createdAt" + INTERVAL '30 days'
+WHERE "expiresAt" IS NULL;
+
 ALTER TABLE "Order"
 ADD COLUMN "buyerName" TEXT,
 ADD COLUMN "buyerPhone" TEXT,
