@@ -16,6 +16,7 @@ export function isVercelBlobImageUrl(value: string) {
     const url = new URL(value);
     return url.protocol === "https:" &&
       url.hostname.endsWith(vercelBlobHostnameSuffix) &&
+      url.pathname.startsWith("/listing-images/") &&
       /\.(jpg|png|webp)$/i.test(url.pathname);
   } catch {
     return false;

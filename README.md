@@ -5,7 +5,7 @@ World Market is a Georgian-first, responsive marketplace MVP built with Next.js,
 ## Requirements
 
 - Node.js 20+
-- No database server required; SQLite is stored locally in `prisma/dev.db`
+- No database server required for local development; SQLite is stored in `prisma/dev.db`
 - Stripe account with Connect enabled for seller transfers
 
 ## Local setup
@@ -31,7 +31,7 @@ Stripe Connect destination charges require a Stripe account and merchant model e
 The production Prisma schema and migrations use PostgreSQL. Local development continues to use SQLite and `prisma/dev.db`; the local database and `.env` are not changed by the production setup. The PostgreSQL migration history keeps the existing initial migration and adds a follow-up migration that brings its older schema up to date, including converting `Listing.imageUrls` to JSONB and backfilling listing expirations.
 
 1. Push the `marketplace` directory to a Git provider and import the project into Vercel. Set **Root Directory** to `marketplace`, leave the framework preset as Next.js, and use Node.js 20 or newer. `npm run build` generates the PostgreSQL Prisma Client before building Next.js.
-2. Create a PostgreSQL database on Neon (its free tier is subject to current provider limits). Add both connection strings to the Vercel project for Preview and Production:
+2. Create a PostgreSQL database on Neon (its free tier is subject to current provider limits). Add both connection strings to the Vercel project for Preview and Production. Prefer a separate Neon branch/database for Preview so preview deployments cannot change production data:
    - `DATABASE_URL`: Neon pooled connection string for application requests.
    - `DIRECT_URL`: direct, unpooled connection string for Prisma migrations.
    Both must target the same database and include the provider's required SSL options. Do not put either URL in source control.
@@ -44,7 +44,7 @@ The production Prisma schema and migrations use PostgreSQL. Local development co
    - `SEED_DEMO_LISTINGS`: set to `false` for a production catalog without demo listings.
    - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CONNECT_COUNTRY`, and `PLATFORM_COMMISSION_PERCENT`: optional payment configuration. Checkout should not be enabled until the Stripe account, Connect country, webhook, and required legal/provider settings are ready.
    - No session/auth secret is currently required. Sessions use random tokens stored as hashes in the database.
-5. Link the Vercel project from the `marketplace` directory, then apply the checked-in migrations and seed the production category catalog. With Vercel CLI installed and the project linked, run:
+5. From the `marketplace` directory, link the Vercel project with `npx vercel link`, then apply the checked-in migrations and seed the production category catalog. With Vercel CLI installed and the project linked, run:
 
    ```powershell
    npx vercel env run --environment production -- npm run db:deploy
@@ -54,7 +54,7 @@ The production Prisma schema and migrations use PostgreSQL. Local development co
    The seed command creates categories and, only when configured, the bootstrap admin. Demo listings are skipped when `SEED_DEMO_LISTINGS=false`. Migrations are not run from the build command.
 6. Deploy from Vercel and verify the deployment URL loads, registration/login works, a listing can be created, and an uploaded image still loads after a new deployment. Verify Stripe separately in test mode before adding live credentials.
 
-For schema changes, create and review PostgreSQL migrations with `npm run db:migrate` against a development PostgreSQL database, commit the generated migration, and run `npm run db:deploy` for deployment. Do not use `db push` against production; it bypasses the reviewed migration history.
+Keep `prisma/schema.prisma` (local SQLite) and `prisma/schema.postgresql.prisma` (production PostgreSQL) aligned in model fields; only their datasource configuration differs. For schema changes, create and review PostgreSQL migrations with `npm run db:migrate` against a development PostgreSQL database, commit the generated migration, and run `npm run db:deploy` for deployment. Do not use `db push` against production; it bypasses the reviewed migration history.
 
 ### Environment variables
 

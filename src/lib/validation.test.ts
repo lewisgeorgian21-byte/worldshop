@@ -39,6 +39,23 @@ test("listings accept locally uploaded image paths but reject unsafe paths", () 
   assert.equal(listingSchema.safeParse({ ...listing, imageUrls: ["/uploads/../../secret.jpg"] }).success, false);
 });
 
+test("listings accept owned Vercel Blob images but reject unrelated Blob paths", () => {
+  const listing = {
+    title: "Used camera",
+    description: "In working condition and carefully maintained.",
+    price: 25000,
+    condition: "GOOD",
+    location: "Tbilisi",
+    imageUrls: ["https://store.public.blob.vercel-storage.com/listing-images/photo-1.webp"],
+    categoryId: "electronics"
+  };
+  assert.equal(listingSchema.safeParse(listing).success, true);
+  assert.equal(
+    listingSchema.safeParse({ ...listing, imageUrls: ["https://store.public.blob.vercel-storage.com/other/photo.webp"] }).success,
+    false
+  );
+});
+
 test("listing validation reports the invalid field clearly", () => {
   const validListing = {
     title: "Used camera",
